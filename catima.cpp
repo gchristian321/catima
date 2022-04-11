@@ -252,23 +252,21 @@ double energy_in(double T, double thickness, const Interpolator &range_spline){
     int counter = 0;
     double range;
     double dedx;
-    double e,r;
+    double e,r,step=0;
     
     range = range_spline(T);
     dedx = 1.0/range_spline.derivative(T);
-    if(range<= thickness) return 0.0;
-    
-    e = T - (thickness*dedx);
+		
+    e = T;
     while(1){
-        r = range - range_spline(e) - thickness;
-        if(fabs(r)<Eout_epsilon)return e;
-        double step = -r*dedx;
-        e = e-step;
-        if(e<Ezero)return 0.0;
-        dedx = 1.0/range_spline.derivative(e);
-        counter++;
-        assert(counter<=100);
-        if(counter>100)return -1;
+			r = range_spline(e) - range - thickness; // fx
+			if(fabs(r)<Eout_epsilon)return e;
+			double step = -r*dedx;
+			e = e+step;
+			dedx = 1.0/range_spline.derivative(e);
+			counter++;
+			assert(counter<=100);
+			if(counter>100)return -1;
     }
     return -1;
 }
