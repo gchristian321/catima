@@ -178,6 +178,33 @@ namespace catima{
     std::vector<double> energy_out(const Projectile &p, const std::vector<double> &T, const Material &t, const Config &c=default_config);
 
     /**
+      * calculates incoming energy from range spline
+      * @param T - outgoing energy
+      * @thickness - thicnkess of the target in g/cm2
+      * @range_spline - precaclulated range spline for material 
+      * @return incoming energy giving energy T after the thickness in Mev/u
+      */
+    double energy_in(double T, double thickness, const Interpolator &range_spline);
+
+    /**
+      * calculates incoming energy 
+      * @p - Projectile
+      * @t - Material
+      * @param T - outgoing energy
+      * @return incoming energy giving energy T after the thickness in Mev/u
+      */
+    double energy_in(const Projectile &p, const Material &t, const Config &c=default_config);
+
+    /**
+      * calculates incoming energy 
+      * @p - Projectile
+      * @t - Material
+      * @param T - outgoing energy vector
+      * @return incoming energy after the material in Mev/u
+      */
+    std::vector<double> energy_in(const Projectile &p, const std::vector<double> &T, const Material &t, const Config &c=default_config);
+
+    /**
       * calculates all observables for projectile passing material
       * @param p - Projectile
       * @param mat - Material

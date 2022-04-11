@@ -248,6 +248,57 @@ std::vector<double> energy_out(const Projectile &p, const std::vector<double> &T
     return eout;
     }
 
+double energy_in(double T, double thickness, const Interpolator &range_spline){
+    int counter = 0;
+    double range;
+    double dedx;
+    double e,r;
+    
+    range = range_spline(T);
+    dedx = 1.0/range_spline.derivative(T);
+    if(range<= thickness) return 0.0;
+    
+    e = T - (thickness*dedx);
+    while(1){
+        r = range - range_spline(e) - thickness;
+        if(fabs(r)<Eout_epsilon)return e;
+        double step = -r*dedx;
+        e = e-step;
+        if(e<Ezero)return 0.0;
+        dedx = 1.0/range_spline.derivative(e);
+        counter++;
+        assert(counter<=100);
+        if(counter>100)return -1;
+    }
+    return -1;
+}
+
+double energy_in(const Projectile &p, const Material &t, const Config &c){
+    auto& data = _storage.Get(p,t,c);
+    //Interpolator range_spline(energy_table.values,data.range.data(),energy_table.num);
+    spline_type range_spline = get_range_spline(data);
+    return energy_in(p.T,t.thickness(),range_spline);
+    }
+
+std::vector<double> energy_in(const Projectile &p, const std::vector<double> &T, const Material &t, const Config &c){
+    auto& data = _storage.Get(p,t,c);
+    //Interpolator range_spline(energy_table.values,data.range.data(),energy_table.num);
+    spline_type range_spline = get_range_spline(data);
+
+    std::vector<double> eout;
+    eout.reserve(T.size());
+    for(auto e:T){
+        if(e<catima::Ezero){
+            eout.push_back(0.0);
+        }
+        else{
+            eout.push_back(energy_in(e,t.thickness(),range_spline));
+        }
+    }
+    
+    return eout;
+    }
+
 std::vector<double> calculate_tof(Projectile p, const Material &t, const Config &c){
     double res;
     std::vector<double> values;
