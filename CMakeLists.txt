@@ -12,6 +12,7 @@ option(REACTIONS "enable/disable nuclear reaction rate" ON)
 option(STORE_SPLINES "store splines, if disables splines are always recreated" ON)
 option(GSL_INTEGRATION "use GSL integration" OFF)
 option(GSL_INTERPOLATION "use GSL inteRPOLATION" OFF)
+option(ROOT_LIB "build library compatible with loading into ROOT" OFF)
 option(THIN_TARGET_APPROXIMATION "thin target approximation" ON)
 option(GENERATE_DATA "make data tables generator" OFF)
 option(PYTHON_WHEEL "make python wheel" OFF)
@@ -56,6 +57,12 @@ set(NUREX ON)
 list(APPEND EXTRA_LIBS nurex::nurex)
 endif(nurex_FOUND)
 
+if(ROOT_LIB)
+  find_package(ROOT REQUIRED)
+  MESSAGE(STATUS "FOUND ROOT!")
+  MESSAGE(STATUS "ROOT flags: " ${ROOT_CXX_FLAGS})
+endif()
+
 
 configure_file(
                     "${CMAKE_CURRENT_SOURCE_DIR}/build_config.in"
@@ -75,19 +82,42 @@ endif(GLOBAL)
 file(GLOB HEADERS *.h libs/*.h)
 
 add_library(catima ${SOURCES})
+
 set_target_properties(catima PROPERTIES
 		      POSITION_INDEPENDENT_CODE ON
                       LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
                       )
 
-target_link_libraries(catima ${EXTRA_LIBS})
+if(ROOT_LIB)
+  target_link_libraries(catima ${EXTRA_LIBS} ROOT::RIO)
+else()
+  target_link_libraries(catima ${EXTRA_LIBS})
+endif()
 
 target_include_directories(catima
                            PUBLIC  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
                                    $<BUILD_INTERFACE:${GSL_INCLUDE_DIRS}>
-                          )
+				   )
+				 
 
 add_library(catima::catima ALIAS catima)
+
+if(ROOT_LIB)
+  ROOT_GENERATE_DICTIONARY(catima_dict catima.h MODULE catima LINKDEF LinkDef.h)
+  add_custom_command(
+        TARGET catima POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E rename
+                ${PROJECT_BINARY_DIR}/libcatima_rdict.pcm
+                ${PROJECT_BINARY_DIR}/lib/libcatima_rdict.pcm
+		)
+  add_custom_command(
+        TARGET catima POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E rename
+                ${PROJECT_BINARY_DIR}/libcatima.rootmap
+                ${PROJECT_BINARY_DIR}/lib/libcatima.rootmap
+		)
+endif()
+
 
 FILE(COPY ${HEADERS} DESTINATION ${PROJECT_BINARY_DIR}/include/catima)
 
